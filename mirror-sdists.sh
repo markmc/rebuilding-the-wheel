@@ -72,16 +72,29 @@ collect_build_requires() {
     cat "${pyproject_toml}"
 
     (cd $(dirname $pyproject_toml) && $PYTHON $extract_script --build-system < pyproject.toml) | while read -r req_iter; do
-        download_output=${TMP}/download-$(${parse_script} "${req_iter}").log
-        download_sdist "${req_iter}" | tee $download_output
-        local req_sdist=$(get_downloaded_sdist $download_output)
+      download_output=${TMP}/download-$(${parse_script} "${req_iter}").log
+      download_sdist "${req_iter}" | tee $download_output
+      local req_sdist=$(get_downloaded_sdist $download_output)
       if [ -n "${req_sdist}" ]; then
+        # Build backend hooks usually may build requires installed.
+        #
+        # When we see a build tool enter the set of packages being
+        # processed, there is a good chance we will see circular
+        # dependencies with other things also being packaged with that
+        # tool, including 2nd or 3rd order dependencies of the tool
+        # itself. For example, plugins to the tool often depend on the
+        # tool. The code for looking up the metadata of a project can
+        # cope with `backend-path` being set, but that does not help
+        # *later* dependencies, so we install the tool to ensure it is
+        # present when required. This introduces an undesirable
+        # dependency on having these build tools in the system
+        # already, so we may end up wanting to treat them as special
+        # cases in the production configuration.
+        pip install -U "${req_iter}"
+
         collect_build_requires "${req_sdist}"
 
         add_to_build_order "build_system" "${req_iter}"
-
-        # Build backend hooks usually may build requires installed
-        pip install -U "${req_iter}"
       fi
     done
 
