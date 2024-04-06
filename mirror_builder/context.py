@@ -32,6 +32,16 @@ class WorkContext:
         # package.
         self._seen_requirements = set()
 
+        # Track requirements that are installed via system packages
+        # instead of wheels.
+        self._system_packages = set()
+
+    def add_system_requirement(self, name):
+        self._system_packages.add(name)
+
+    def is_system_requirement(self, name):
+        return name in self._system_packages
+
     def mark_as_seen(self, sdist_id):
         logger.debug('remembering seen sdist %s', sdist_id)
         self._seen_requirements.add(sdist_id)
