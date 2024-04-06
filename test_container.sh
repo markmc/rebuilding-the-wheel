@@ -13,12 +13,11 @@ podman build --tag rebuilding-the-wheel -f ./Containerfile
 
 # Create a separate work dir so we can save the output to compare to
 # what we get when we run the same scripts outside of the container.
-mkdir -p container-work-dir
-chmod ugo+rwx container-work-dir
+mkdir -p work-dir-container
 
 podman run -it --rm \
        -e PYTHON_TO_TEST=python3.12 \
-       -e WORKDIR=/src/container-work-dir \
+       -e WORKDIR=/src/work-dir-bootstrap-container \
        --userns=keep-id \
        --security-opt label=disable \
        --volume .:/src:rw,exec \
