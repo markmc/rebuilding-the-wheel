@@ -11,6 +11,8 @@ PYTHON_TO_TEST="
   python3.12
 "
 
+rm -rf wheels-repo/
+
 for PYTHON in $PYTHON_TO_TEST; do
     jq -r '.[] | .dist + " " + .version' work-dir-bootstrap/build-order-$($PYTHON --version | cut -f2 -d' ').json | while read name version; do
         PYTHON=$PYTHON ./build-wheel.sh $name $version
