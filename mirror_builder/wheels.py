@@ -26,8 +26,10 @@ def _default_build_wheel(ctx, req_type, req, resolved_name, why, sdist_root_dir,
                          build_dependencies):
     build_env = BuildEnvironment(ctx, sdist_root_dir.parent, build_dependencies)
     cmd = [
-        'firejail',
-        '--net=none',
+        # FIXME: Need to cope with build dependencies on rust packages before
+        #        we can fully isolate the wheel build step.
+        # 'firejail',
+        # '--net=none',
         build_env.python, '-m', 'pip', '-vvv',
         '--disable-pip-version-check',
         'wheel',
