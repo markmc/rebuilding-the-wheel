@@ -15,12 +15,21 @@ VERBOSE_LOG_FMT = '%(levelname)s:%(name)s:%(lineno)d: %(message)s'
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('toplevel', nargs='+')
     parser.add_argument('-v', '--verbose', action='store_true', default=False)
     parser.add_argument('-o', '--sdists-repo', default='sdists-repo')
     parser.add_argument('-w', '--wheels-repo', default='wheels-repo')
     parser.add_argument('-t', '--work-dir', default=os.environ.get('WORK_DIR', 'work-dir'))
     parser.add_argument('--wheel-server-port', default=0, type=int)
+
+    subparsers = parser.add_subparsers(title='commands', dest='command')
+
+    parser_bootstrap = subparsers.add_parser('bootstrap')
+    parser_bootstrap.set_defaults(func=do_bootstrap)
+    parser_bootstrap.add_argument('toplevel', nargs='+')
+
+    parser_build = subparsers.add_parser('build-one')
+    parser_build.set_defaults(func=do_build_one)
+
     args = parser.parse_args(sys.argv[1:])
 
     logging.basicConfig(
@@ -38,8 +47,16 @@ def main():
 
     server.start_wheel_server(ctx)
 
+    args.func(ctx, args)
+
+
+def do_bootstrap(ctx, args):
     for toplevel in args.toplevel:
         sdist.handle_requirement(ctx, Requirement(toplevel))
+
+
+def do_build_one(ctx, args):
+    raise NotImplementedError()
 
 
 if __name__ == '__main__':
