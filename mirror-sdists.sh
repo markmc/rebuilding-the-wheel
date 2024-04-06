@@ -27,7 +27,7 @@ VENV="${WORKDIR}/venv-${PYTHON}"
 # Create a fresh virtualenv every time since the process installs
 # packages into it.
 rm -rf "${VENV}"
-"${PYTHON}" -m venv "${VENV}"
+"${PYTHON}" -m venv "${VENV}" --system-site-packages
 source "${VENV}/bin/activate"
 pip install --upgrade pip
 pip install -e .
