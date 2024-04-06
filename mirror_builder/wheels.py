@@ -12,15 +12,19 @@ def build_wheel(ctx, req_type, req, resolved_name, why, sdist_root_dir, build_de
     builder = overrides.find_override_method(req.name, 'build_wheel')
     if not builder:
         builder = _default_build_wheel
-    build_env = BuildEnvironment(ctx, sdist_root_dir.parent, build_dependencies)
-    wheel_filenames = builder(ctx, build_env, req_type, req, resolved_name, why, sdist_root_dir)
+    wheel_filenames = builder(ctx, req_type, req, resolved_name, why, sdist_root_dir,
+                              build_dependencies)
     for wheel in wheel_filenames:
         server.add_wheel_to_mirror(ctx, sdist_root_dir.name, wheel)
     ctx.add_to_build_order(req_type, req, resolved_name, why)
-    logger.info('built wheel for %s', resolved_name)
+    if wheel_filenames:
+        logger.info('built wheel for %s', resolved_name)
+    return
 
 
-def _default_build_wheel(ctx, build_env, req_type, req, resolved_name, why, sdist_root_dir):
+def _default_build_wheel(ctx, req_type, req, resolved_name, why, sdist_root_dir,
+                         build_dependencies):
+    build_env = BuildEnvironment(ctx, sdist_root_dir.parent, build_dependencies)
     cmd = [
         'firejail',
         '--net=none',
