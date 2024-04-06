@@ -34,7 +34,7 @@ RUN dnf -y install ninja-build
 # rust/cargo needed, otherwise:
 # Building wheels for collected packages: maturin
 # error: can't find Rust compiler
-RUN dnf -y install rust cargo
+RUN dnf -y install rust cargo maturin
 
 # Needed for cffi build
 RUN dnf -y install libffi libffi-devel
