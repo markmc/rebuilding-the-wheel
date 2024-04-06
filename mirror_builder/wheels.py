@@ -52,13 +52,18 @@ class BuildEnvironment:
         return (self._path / 'bin/python3').absolute()
 
     def _createenv(self):
-        self._builder = venv.EnvBuilder(clear=True, with_pip=True)
+        self._builder = venv.EnvBuilder(
+            clear=True,                 # remove a venv created by previous run
+            with_pip=True,              # include pip in the venv
+            system_site_packages=True,  # find system package dependencies
+        )
         self._builder.create(self._path)
         req_filename = self._path / 'requirements.txt'
         # FIXME: Ensure each requirement is pinned to a specific version.
         with open(req_filename, 'w') as f:
             for r in self._build_requirements:
-                f.write(f'{r}\n')
+                if not self._ctx.is_system_requirement(r.name):
+                    f.write(f'{r}\n')
         external_commands.run(
             [self.python, '-m', 'pip',
              'install',
