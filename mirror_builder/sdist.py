@@ -58,6 +58,55 @@ def handle_requirement(ctx, req, req_type='toplevel', why=''):
     return resolved_version
 
 
+def build_one(ctx, req):
+    (resolved_version, sdist_root_dir) = sources.prepare_source(ctx, req)
+
+    # Avoid cyclic dependencies and redundant processing.
+    if sdist_root_dir is None:
+        logger.debug(f'redundant requirement {req} resolves to {resolved_version}')
+        return
+
+    logger.info('building %s', req)
+
+    next_req_type = 'build_system'
+    build_system_dependencies = dependencies.get_build_system_dependencies(req, sdist_root_dir)
+    _write_requirements_file(
+        build_system_dependencies,
+        sdist_root_dir.parent / 'build-system-requirements.txt',
+    )
+    for dep in build_system_dependencies:
+        # We may need these dependencies installed in order to run build hooks
+        # Example: frozenlist build-system.requires includes expandvars because
+        # it is used by the packaging/pep517_backend/ build backend
+        safe_install(ctx, dep, next_req_type)
+
+    next_req_type = 'build_backend'
+    build_backend_dependencies = dependencies.get_build_backend_dependencies(req, sdist_root_dir)
+    _write_requirements_file(
+        build_backend_dependencies,
+        sdist_root_dir.parent / 'build-backend-requirements.txt',
+    )
+    for dep in build_backend_dependencies:
+        # Build backends are often used to package themselves, so in
+        # order to determine their dependencies they may need to be
+        # installed.
+        safe_install(ctx, dep, next_req_type)
+
+    wheels.build_wheel(ctx, 'toplevel', req, resolved_version, 'toplevel', sdist_root_dir,
+                       build_system_dependencies | build_backend_dependencies)
+
+    next_req_type = 'dependency'
+    install_dependencies = dependencies.get_install_dependencies(req, sdist_root_dir)
+    _write_requirements_file(
+        install_dependencies,
+        sdist_root_dir.parent / 'requirements.txt',
+    )
+    # for dep in install_dependencies:
+    #     handle_requirement(ctx, dep, next_req_type, next_why)
+
+    return resolved_version
+
+
 def _write_requirements_file(requirements, filename):
     with open(filename, 'w') as f:
         for r in requirements:

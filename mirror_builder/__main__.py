@@ -29,6 +29,8 @@ def main():
 
     parser_build = subparsers.add_parser('build-one')
     parser_build.set_defaults(func=do_build_one)
+    parser_build.add_argument('dist_name')
+    parser_build.add_argument('dist_version')
 
     args = parser.parse_args(sys.argv[1:])
 
@@ -56,7 +58,8 @@ def do_bootstrap(ctx, args):
 
 
 def do_build_one(ctx, args):
-    raise NotImplementedError()
+    requirement_str = f'{args.dist_name}=={args.dist_version}'
+    sdist.build_one(ctx, Requirement(requirement_str))
 
 
 if __name__ == '__main__':
