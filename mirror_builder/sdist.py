@@ -66,6 +66,10 @@ def _write_requirements_file(requirements, filename):
 
 def _maybe_install(ctx, req, req_type, resolved_name):
     "Install the package if it is not already installed."
+    if ctx.is_system_requirement(req.name):
+        logging.info('not installing system requirment %s into build venv',
+                     req.name)
+        return
     try:
         version = importlib.metadata.version(req.name)
         actual_version = f'{req.name}-{version}'
