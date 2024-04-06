@@ -2,13 +2,10 @@
 
 set -xe
 
-WORKDIR=$(realpath $(pwd)/work-dir)
-mkdir -p $WORKDIR
-
 PYTHON=${PYTHON:-python3.9}
 
 # Redirect stdout/stderr to logfile
-logfile="$WORKDIR/install-mirror-${PYTHON_VERSION}.log"
+logfile="install-mirror-${PYTHON}.log"
 exec > >(tee "$logfile") 2>&1
 
 VENV=$(basename $(mktemp --dry-run --directory --tmpdir=. venvXXXX))
