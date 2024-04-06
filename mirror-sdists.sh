@@ -10,8 +10,8 @@ if [ -n "${VERBOSE}" ]; then
   VERBOSE="-v"
 fi
 
-DEFAULT_WORKDIR=$(realpath $(pwd)/work-dir)
-WORKDIR=${WORKDIR:-${DEFAULT_WORKDIR}}
+DEFAULT_WORKDIR=$(realpath $(pwd)/work-dir-bootstrap)
+export WORKDIR=${WORKDIR:-${DEFAULT_WORKDIR}}
 mkdir -p $WORKDIR
 
 PYTHON=${PYTHON:-python3.9}
@@ -23,7 +23,7 @@ TOPLEVEL="${1:-langchain}"
 logfile="$WORKDIR/mirror-sdists-${PYTHON_VERSION}.log"
 exec > >(tee "$logfile") 2>&1
 
-VENV="${WORKDIR}/venv-${PYTHON}"
+VENV="${WORKDIR}/venv-mirror-${PYTHON}"
 # Create a fresh virtualenv every time since the process installs
 # packages into it.
 rm -rf "${VENV}"
