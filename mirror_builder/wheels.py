@@ -22,8 +22,6 @@ def build_wheel(ctx, req_type, req, version, why, sdist_root_dir, build_dependen
 
 def _default_build_wheel(ctx, build_env, req_type, req, version, why, sdist_root_dir):
     cmd = [
-        'firejail',
-        '--net=none',
         build_env.python, '-m', 'pip', '-vvv',
         '--disable-pip-version-check',
         'wheel',
@@ -34,6 +32,11 @@ def _default_build_wheel(ctx, build_env, req_type, req, version, why, sdist_root
         '--no-deps',
         '.',
     ]
+    if ctx.isolate_builds:
+        cmd = [
+            'firejail',
+            '--net=none',
+        ] + cmd
     external_commands.run(cmd, cwd=sdist_root_dir)
     return sdist_root_dir.parent.glob('*.whl')
 
