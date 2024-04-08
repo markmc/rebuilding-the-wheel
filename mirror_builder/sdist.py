@@ -58,13 +58,9 @@ def handle_requirement(ctx, req, req_type='toplevel', why=''):
     return resolved_version
 
 
-def build_one(ctx, req):
-    (resolved_version, sdist_root_dir) = sources.prepare_source(ctx, req)
-
-    # Avoid cyclic dependencies and redundant processing.
-    if sdist_root_dir is None:
-        logger.debug(f'redundant requirement {req} resolves to {resolved_version}')
-        return
+def build_one(ctx, sdist_path, req):
+    sdist_root_dir = sources.unpack_and_patch_source(ctx, sdist_path)
+    resolved_version = 'unused'
 
     logger.info('building %s', req)
 

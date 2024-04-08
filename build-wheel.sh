@@ -5,6 +5,7 @@ set -xe
 set -o pipefail
 export PS4='+ ${BASH_SOURCE#$HOME/}:$LINENO \011'
 
+sdist_path="$1"; shift
 name="$1"; shift
 version="$1"; shift
 
@@ -34,4 +35,4 @@ source "${VENV}/bin/activate"
 pip install --upgrade pip
 pip install -e .
 
-python3 -m mirror_builder ${VERBOSE} build-one "$name" "$version"
+python3 -m mirror_builder ${VERBOSE} build-one "$sdist_path" "$name" "$version"

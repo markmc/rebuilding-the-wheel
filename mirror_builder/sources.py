@@ -88,6 +88,12 @@ def _patch_source(ctx, source_root_dir):
             )
 
 
+def unpack_and_patch_source(ctx, source_filename):
+    source_root_dir = unpack_source(ctx, source_filename)
+    _patch_source(ctx, source_root_dir)
+    return source_root_dir
+
+
 def prepare_source(ctx, req):
     logger.info('preparing source for %s', req)
     preparer = overrides.find_override_method(req.name, 'prepare_source')
@@ -107,6 +113,5 @@ def _default_prepare_source(ctx, req):
         return (version, None)
     ctx.mark_as_seen(resolved_name)
 
-    source_root_dir = unpack_source(ctx, source_filename)
-    _patch_source(ctx, source_root_dir)
+    source_root_dir = unpack_and_patch_source(source_filename)
     return (version, source_root_dir)
