@@ -20,8 +20,8 @@ mkdir -p sdists-repo/downloads/
 TOPLEVEL=${1:-stevedore}
 
 # Redirect stdout/stderr to logfile
-logfile="$WORKDIR/rebuild-following-bootstrap.log"
-exec > >(tee "$logfile") 2>&1
+LOGFILE="${LOGFILE:-$WORKDIR/test.log}"
+exec > >(tee "$LOGFILE") 2>&1
 
 # Which version of python should the test use
 PYTHON=${PYTHON:-python3.12}
@@ -55,11 +55,21 @@ build_wheel() {
     local dist="$1"; shift
     local version="$1"; shift
 
-    banner " building image for $dist $version"
+    local build_base_image="e2e-build-base"
+    if [ -f ${TOPDIR}/Containerfile.${dist} ]; then
+        # Create a custom base image for building the wheel.
+        build_base_image="e2e-build-${dist}-base"
+        banner " building custom base image $build_base_image"
+        podman build -f ${TOPDIR}/Containerfile.${dist} \
+           --tag e2e-build-${dist}-base
+    fi
+
+    banner " building image for $dist $version based on $build_base_image"
 
     # Create an image for building the wheel
     podman build -f $TOPDIR/Containerfile.e2e-one-wheel \
            --tag e2e-build-$dist \
+           --build-arg="BASE=${build_base_image}" \
            --build-arg="DIST=$dist" \
            --build-arg="VERSION=$version" \
            --build-arg="WHEEL_SERVER_URL=$WHEEL_SERVER_URL"
@@ -92,7 +102,7 @@ on_exit() {
 }
 trap on_exit EXIT SIGINT SIGTERM
 
-# Build the base image.
+# Build the base images
 banner "Build base image"
 podman build \
        --tag e2e-build-base \

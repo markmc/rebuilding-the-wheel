@@ -1,4 +1,5 @@
-FROM e2e-build-base
+ARG BASE=e2e-build-base
+FROM ${BASE}
 
 # Which package should be built?
 ARG DIST
