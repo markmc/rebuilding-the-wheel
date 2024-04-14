@@ -1,7 +1,5 @@
 FROM fedora:39
 
-ARG PYTHON=python3.12
-
 # Commands needed by mirror_builder
 RUN dnf -y install procps-ng jq patch
 
@@ -11,6 +9,8 @@ RUN dnf -y install  gcc g++
 # Python dependencies (last in case we want to change versions)
 # python3.12-devel needed for 3.12 builds (on CentOS Stream 9)
 RUN dnf -y install python3.9 python3.12 python3.12-devel
+
+ARG PYTHON=python3.12
 
 # Create a virtualenv for our tools
 RUN $PYTHON -m venv /venv \

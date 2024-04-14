@@ -4,12 +4,6 @@ FROM fedora:39
 #       now. Ideally the bootstrapping process will not be needed in
 #       production.
 
-# Which version of Python should be used?
-ARG PYTHON=python3.12
-
-# Which package should be bootstrapped?
-ARG TOPLEVEL
-
 # The diff command is needed in tests run while building patchelf
 #
 # The base layer is minimal, so instead of tracking individual tools
@@ -56,6 +50,9 @@ RUN dnf -y install zlib-devel libjpeg-devel
 # python3.12-devel needed for 3.12 builds (on CentOS Stream 9)
 RUN dnf -y install python3.9 python3.12 python3.12-devel
 
+# Which version of Python should be used?
+ARG PYTHON=python3.12
+
 # Create a virtualenv for our tools
 RUN $PYTHON -m venv /venv \
     && /venv/bin/pip install --upgrade pip
@@ -69,6 +66,9 @@ COPY . /mirror-builder
 RUN pip install /mirror-builder
 
 WORKDIR /src
+
+# Which package should be bootstrapped?
+ARG TOPLEVEL
 
 RUN python3 -m mirror_builder \
     --work-dir /work-dir \
