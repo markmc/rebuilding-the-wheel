@@ -84,14 +84,17 @@ def _patches_for_source_dir(source_dir_name):
 
     Input should be the base directory name, not a full path.
 
-    Yields pathlib.Path() references
+    Yields pathlib.Path() references to patches in the order they
+    should be applied, which is controlled through lexical sorting of
+    the filenames.
+
     """
     # importlib.resources.files gives us back a MultiplexedPath, but
     # that doesn't support a glob() method directly, so we have to
     # look through the list of files in the path ourselves.
     patch_dir = resources.files("mirror_builder.patches")
     pattern = source_dir_name + '*.patch'
-    for p in patch_dir.iterdir():
+    for p in sorted(patch_dir.iterdir()):
         if not fnmatch.fnmatch(p.name, '*.patch'):
             # ignore things like python files so we don't log excessively
             continue
