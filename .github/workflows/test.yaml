@@ -72,8 +72,8 @@ jobs:
           - "3.12"
         test-target:
           - cffi
-          - cryptography
-          #- maturin   # fails to build rust dependencies in isolation
+          # - cryptography  # fails to build rust dependencies in isolation
+          # - maturin       # fails to build rust dependencies in isolation
           - ninja
           - patchelf
           - pillow
