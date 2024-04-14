@@ -10,7 +10,9 @@ RUN dnf -y install  gcc g++
 # python3.12-devel needed for 3.12 builds (on CentOS Stream 9)
 RUN dnf -y install python3.9 python3.12 python3.12-devel
 
-ARG PYTHON=python3.12
+# Which version of python should we use?
+ARG PYTHON
+RUN $PYTHON --version
 
 # Create a virtualenv for our tools
 RUN $PYTHON -m venv /venv \

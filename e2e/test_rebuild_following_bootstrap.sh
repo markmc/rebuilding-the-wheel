@@ -36,7 +36,8 @@ bootstrap() {
     # building one wheel at a time later.
     podman build -f $TOPDIR/Containerfile.e2e-bootstrap \
            --tag e2e-bootstrap-$dist \
-           --build-arg="TOPLEVEL=$dist"
+           --build-arg="TOPLEVEL=$dist" \
+           --build-arg="PYTHON=$PYTHON"
 
     # Create a container with the image so we can copy the
     # build-order.json file out of it to use for the build.
