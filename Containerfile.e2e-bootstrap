@@ -81,5 +81,4 @@ RUN python3 -m mirror_builder \
 # Create a minimal image as output containing only the
 # build-order.json file.
 FROM scratch
-RUN mkdir /work-dir
 COPY --from=0 /work-dir/build-order.json /work-dir/build-order.json

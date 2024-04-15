@@ -8,7 +8,7 @@ source /venv/bin/activate
 python3 -m mirror_builder \
         --wheel-server-url "$WHEEL_SERVER_URL" \
         -v \
-        --work-dir $(pwd) \
+        --work-dir /work-dir \
         --sdists-repo /sdists-repo \
         --wheels-repo /wheels-repo \
         build "$DIST" "$VERSION" \
