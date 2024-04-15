@@ -1,0 +1,52 @@
+ARG BASE=e2e-build-base
+FROM ${BASE}
+
+# Which package should be built?
+ARG DIST
+ARG VERSION
+
+ENV DIST=${DIST}
+ENV VERSION=${VERSION}
+
+# Where do we find dependencies?
+ARG WHEEL_SERVER_URL
+
+ENV VIRTUAL_ENV=/venv
+ENV PATH=$VIRTUAL_ENV/bin:$PATH
+
+RUN mkdir /sdists-repo && mkdir /work-dir && mkdir /build-logs
+
+# Download the source archive
+RUN python3 -m mirror_builder -v \
+    --work-dir /work-dir \
+    --sdists-repo /sdists-repo \
+    --wheels-repo /wheels-repo \
+    download-source-archive ${DIST} ${VERSION} \
+    2>&1 | tee /build-logs/download-source-archive.log
+
+RUN find /work-dir
+
+# Prepare the source dir for building
+RUN python3 -m mirror_builder -v \
+    --work-dir /work-dir \
+    --sdists-repo /sdists-repo \
+    --wheels-repo /wheels-repo \
+    prepare-source ${DIST} ${VERSION} \
+    2>&1 | tee /build-logs/prepare-source.log
+
+RUN find /work-dir
+
+# Prepare the build environment
+RUN python3 -m mirror_builder -v \
+    --work-dir /work-dir \
+    --sdists-repo /sdists-repo \
+    --wheels-repo /wheels-repo \
+    --wheel-server-url ${WHEEL_SERVER_URL} \
+    prepare-build ${DIST} ${VERSION} \
+    2>&1 | tee /build-logs/prepare-build.log
+
+COPY e2e/container_build.sh /work-dir
+
+WORKDIR /build-dir
+
+ENTRYPOINT /work-dir/container_build.sh

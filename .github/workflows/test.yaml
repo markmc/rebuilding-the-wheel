@@ -70,8 +70,14 @@ jobs:
         python-version:
           - "3.9"
           - "3.12"
-        test-script:
-          - e2e/test_rebuild_following_bootstrap.sh
+        test-target:
+          - cffi
+          # - cryptography  # fails to build rust dependencies in isolation
+          # - maturin       # fails to build rust dependencies in isolation
+          - ninja
+          - patchelf
+          - pillow
+          - stevedore  # test algorithm with something known to have only pure-python dependencies
 
     steps:
       - name: Get source
@@ -90,4 +96,4 @@ jobs:
 
       - name: Run tests
         run: |
-          PYTHON=python${{ matrix.python-version }} ${{ matrix.test-script }}
+          PYTHON=python${{ matrix.python-version }} ./e2e/test_rebuild_following_bootstrap.sh ${{ matrix.test-target }}

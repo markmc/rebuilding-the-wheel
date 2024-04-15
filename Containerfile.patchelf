@@ -1,0 +1,3 @@
+FROM e2e-build-base
+
+RUN dnf -y install cmake autoconf automake diffutils
