@@ -51,9 +51,8 @@ def handle_requirement(ctx, req, req_type='toplevel', why=''):
         ctx, sdist_root_dir.parent,
         build_system_dependencies | build_backend_dependencies,
     )
-    wheel_filenames = wheels.build_wheel(ctx, req, sdist_root_dir, build_env)
-    for wheel in wheel_filenames:
-        server.add_wheel_to_mirror(ctx, sdist_root_dir.name, wheel)
+    wheels.build_wheel(ctx, req, sdist_root_dir, build_env)
+    server.update_wheel_mirror(ctx)
     logger.info('built wheel for %s (%s)', req.name, resolved_version)
     ctx.add_to_build_order(req_type, req, resolved_version, why)
 
@@ -140,7 +139,7 @@ def safe_install(ctx, req, req_type):
         '--no-cache-dir',
         '--upgrade',
         '--only-binary', ':all:',
-        '--index-url', ctx.wheel_server_url,
+    ] + ctx.pip_wheel_server_args + [
         f'{req}',
     ])
     version = importlib.metadata.version(req.name)
