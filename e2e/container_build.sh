@@ -11,7 +11,7 @@ python3 -m mirror_builder \
         --work-dir $(pwd) \
         --sdists-repo /sdists-repo \
         --wheels-repo /wheels-repo \
-        build "$DIST" "$VERSION" /work-dir/${DIST}*/${DIST}* \
+        build "$DIST" "$VERSION" \
         2>&1 | tee /build-logs/build.log
 
 tar cvf /work-dir/built-artifacts.tar /wheels-repo/build /sdists-repo/downloads /build-logs
