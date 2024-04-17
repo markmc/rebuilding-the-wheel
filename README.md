@@ -1,3 +1,7 @@
+# MOVED
+
+This repo has moved to: https://gitlab.com/fedora/sigs/ai-ml/rebuilding-the-wheel
+
 # Rebuilding the Wheel
 
 This repo is a prototype of completely re-building a dependency tree of Python wheels from source.
