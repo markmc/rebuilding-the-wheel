@@ -4,11 +4,15 @@ import argparse
 import logging
 import os
 import pathlib
+import re
 import sys
 
 from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
 
 from . import context, sdist, server, sources, wheels
+
+logger = logging.getLogger(__name__)
 
 TERSE_LOG_FMT = '%(message)s'
 VERBOSE_LOG_FMT = '%(levelname)s:%(name)s:%(lineno)d: %(message)s'
@@ -20,7 +24,7 @@ def main():
     parser.add_argument('-o', '--sdists-repo', default='sdists-repo')
     parser.add_argument('-w', '--wheels-repo', default='wheels-repo')
     parser.add_argument('-t', '--work-dir', default=os.environ.get('WORKDIR', 'work-dir'))
-    parser.add_argument('--wheel-server-port', default=0, type=int)
+    parser.add_argument('--wheel-server-url')
     parser.add_argument('--no-cleanup', dest='cleanup', default=True, action='store_false')
 
     subparsers = parser.add_subparsers(title='commands', dest='command')
@@ -38,19 +42,16 @@ def main():
     parser_prepare_source.set_defaults(func=do_prepare_source)
     parser_prepare_source.add_argument('dist_name')
     parser_prepare_source.add_argument('dist_version')
-    parser_prepare_source.add_argument('source_archive')
 
     parser_prepare_build = subparsers.add_parser('prepare-build')
     parser_prepare_build.set_defaults(func=do_prepare_build)
     parser_prepare_build.add_argument('dist_name')
     parser_prepare_build.add_argument('dist_version')
-    parser_prepare_build.add_argument('source_dir')
 
     parser_build = subparsers.add_parser('build')
     parser_build.set_defaults(func=do_build)
     parser_build.add_argument('dist_name')
     parser_build.add_argument('dist_version')
-    parser_build.add_argument('source_dir')
 
     args = parser.parse_args(sys.argv[1:])
 
@@ -63,7 +64,7 @@ def main():
         sdists_repo=args.sdists_repo,
         wheels_repo=args.wheels_repo,
         work_dir=args.work_dir,
-        wheel_server_port=args.wheel_server_port,
+        wheel_server_url=args.wheel_server_url,
         cleanup=args.cleanup,
     )
     ctx.setup()
@@ -79,38 +80,90 @@ def do_bootstrap(ctx, args):
 
 def do_download_source_archive(ctx, args):
     req = Requirement(f'{args.dist_name}=={args.dist_version}')
+    logger.info('downloading source archive for %s', req)
     filename, _ = sources.download_source(ctx, req)
-    with open(ctx.work_dir / 'last-download.txt', 'w') as f:
-        f.write(filename)
     print(filename)
 
 
 def do_prepare_source(ctx, args):
     req = Requirement(f'{args.dist_name}=={args.dist_version}')
-    source_filename = pathlib.Path(args.source_archive)
+    logger.info('preparing source directory for %s', req)
+    source_filename = _find_sdist(pathlib.Path(args.sdists_repo), req, args.dist_version)
     # FIXME: Does the version need to be a Version instead of str?
     source_root_dir = sources.prepare_source(ctx, req, source_filename, args.dist_version)
-    with open(ctx.work_dir / 'last-source-dir.txt', 'w') as f:
-        f.write(str(source_root_dir))
     print(source_root_dir)
+
+
+def _dist_name_to_filename(dist_name):
+    """Transform the dist name into a prefix for a filename.
+
+    Following https://peps.python.org/pep-0427/
+    """
+    canonical_name = canonicalize_name(dist_name)
+    return re.sub(r"[^\w\d.]+", "_", canonical_name, re.UNICODE)
+
+
+def _find_sdist(sdists_repo, req, dist_version):
+    downloads_dir = sdists_repo / 'downloads'
+    filename_prefix = _dist_name_to_filename(req.name)
+    canonical_name = canonicalize_name(req.name)
+    candidates = [
+        # First check if the file is there using the canonically
+        # transformed name.
+        downloads_dir / f'{filename_prefix}-{dist_version}.tar.gz',
+        # If that didn't work, try the canonical dist name. That's not
+        # "correct" but we do see it. (charset-normalizer-3.3.2.tar.gz
+        # and setuptools-scm-8.0.4.tar.gz) for example
+        downloads_dir / f'{canonical_name}-{dist_version}.tar.gz',
+    ]
+    for sdist_file in candidates:
+        if sdist_file.exists():
+            return sdist_file
+    raise RuntimeError(
+        f'Cannot find sdist for {req.name} version {dist_version} in {candidates}'
+    )
+
+
+def _find_source_dir(work_dir, req, dist_version):
+    filename_prefix = _dist_name_to_filename(req.name)
+    filename_based = f'{filename_prefix}-{dist_version}'
+    canonical_name = canonicalize_name(req.name)
+    canonical_based = f'{canonical_name}-{dist_version}'
+    candidates = [
+        # First check if the file is there using the canonically
+        # transformed name.
+        work_dir / filename_based / filename_based,
+        # If that didn't work, try the canonical dist name. That's not
+        # "correct" but we do see it. (charset-normalizer-3.3.2.tar.gz
+        # and setuptools-scm-8.0.4.tar.gz) for example
+        work_dir / canonical_based / canonical_based,
+    ]
+    for source_dir in candidates:
+        if source_dir.exists():
+            return source_dir
+
+    raise RuntimeError(
+        f'Cannot find source directory for {req.name} version {dist_version} in {candidates}'
+    )
 
 
 def do_prepare_build(ctx, args):
     server.start_wheel_server(ctx)
     req = Requirement(f'{args.dist_name}=={args.dist_version}')
-    source_root_dir = pathlib.Path(args.source_dir)
+    source_dir = _find_source_dir(pathlib.Path(args.work_dir), req, args.dist_version)
+    logger.info('preparing build environment for %s', req)
+    source_root_dir = pathlib.Path(source_dir)
     sdist.prepare_build_environment(ctx, req, source_root_dir)
 
 
 def do_build(ctx, args):
     req = Requirement(f'{args.dist_name}=={args.dist_version}')
-    source_root_dir = pathlib.Path(args.source_dir)
+    logger.info('building for %s', req)
+    source_root_dir = _find_source_dir(pathlib.Path(args.work_dir), req, args.dist_version)
     build_env = wheels.BuildEnvironment(ctx, source_root_dir.parent, None)
     wheel_filenames = wheels.build_wheel(ctx, req, source_root_dir, build_env)
-    with open(ctx.work_dir / 'last-wheels.txt', 'w') as f:
-        for filename in wheel_filenames:
-            f.write(f'{filename}\n')
-            print(filename)
+    for filename in wheel_filenames:
+        print(filename)
 
 
 if __name__ == '__main__':
